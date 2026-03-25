@@ -1,5 +1,3 @@
--- Simple SouljaWare Loader (Simplified)
-
 local CONFIG = {
     RetryCount = 1,           -- How many times to retry if it fails
     RetryDelay = 1,           -- Seconds to wait before retry
