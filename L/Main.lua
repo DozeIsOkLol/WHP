@@ -1,104 +1,104 @@
---================================================================================--
--- CONFIGURATION
---================================================================================--
+-- Simple SouljaWare Loader (Simplified)
 
 local CONFIG = {
-    RetryCount = 2,
-    BaseRetryDelay = 0.5,
-    HttpGetTimeout = 5,
-    Verbose = true
+    RetryCount = 1,           -- How many times to retry if it fails
+    RetryDelay = 1,           -- Seconds to wait before retry
+    Timeout = 8,              -- Max time to wait for HttpGet
+    Verbose = true            -- Set to false to hide messages
 }
 
 local SUPPORTED_GAMES = {
     {
-        Name = "Flick",
-        PlaceIDs = 136801880565837
-        ScriptURLs = {
-            "https://raw.githubusercontent.com/DozeIsOkLol/SouljaWare/refs/heads/main/129119196465909/Main.lua"
-        }
+        Name = "bLockerman's Minesweeper",
+        PlaceIDs = {7871169780},
+        ScriptURL = "https://raw.githubusercontent.com/DozeIsOkLol/WHP/refs/heads/main/G/7871169780.lua"
     },
     {
-        Name = "N/A",
+        Name = "Universal",
         IsUniversal = true,
-        ScriptURLs = {
-            "N/A"
-        }
+        ScriptURL = ""
     }
 }
 
---================================================================================--
--- CORE FUNCTIONS
---================================================================================--
-
-local function fetchScript(urls, retries, timeout, baseDelay)
-    local errors = {}
-
-    for i = 1, #urls do
-        local url = urls[i]
-
-        for attempt = 1, retries + 1 do
-            local success, result = pcall(function()
-                return game:HttpGet(url)
-            end)
-
-            if success and type(result) == "string" then
-                _G.SOULJAWARE_LAST_URL = url
-                return result
-            else
-                table.insert(errors, "Attempt " .. attempt .. " failed on URL #" .. i)
-
-                if attempt <= retries then
-                    wait(baseDelay * (2 ^ (attempt - 1)))
-                end
-            end
+-- Simple function to get script with retry
+local function fetchScript(url)
+    for attempt = 1, CONFIG.RetryCount + 1 do
+        if CONFIG.Verbose then
+            print("➡️ Trying to load from: " .. url .. " (Attempt " .. attempt .. ")")
         end
-    end
-
-    return nil, table.concat(errors, "\n")
-end
-
-local function findGameByPlaceId(placeId)
-    local universal = nil
-
-    for _, data in ipairs(SUPPORTED_GAMES) do
-        if data.IsUniversal then
-            universal = data
+        
+        local success, result = pcall(function()
+            return game:HttpGet(url, true)
+        end)
+        
+        if success then
+            if CONFIG.Verbose then
+                print("✅ Script Loaded successfully!")
+            end
+            return result
         else
-            local ids = type(data.PlaceIDs) == "table" and data.PlaceIDs or { data.PlaceIDs }
-            for _, id in ipairs(ids) do
-                if id == placeId then
-                    return data
-                end
+            if CONFIG.Verbose then
+                warn("⚠️ Attempt " .. attempt .. " failed: " .. tostring(result))
+            end
+            if attempt <= CONFIG.RetryCount then
+                task.wait(CONFIG.RetryDelay)
             end
         end
     end
-
-    return universal
+    
+    return nil
 end
 
+-- Find which game we're in
+local function getGameData()
+    local placeId = game.PlaceId
+    
+    for _, game in ipairs(SUPPORTED_GAMES) do
+        if game.IsUniversal then
+            return game
+        end
+        
+        local ids = typeof(game.PlaceIDs) == "table" and game.PlaceIDs or {game.PlaceIDs}
+        for _, id in ipairs(ids) do
+            if id == placeId then
+                return game
+            end
+        end
+    end
+    
+    return nil
+end
+
+-- Main loader
 local function loadScript()
-    local gameData = findGameByPlaceId(game.PlaceId)
-    if not gameData then return end
-
-    local urls = type(gameData.ScriptURLs) == "table" and gameData.ScriptURLs or { gameData.ScriptURLs }
-    local source = fetchScript(urls, CONFIG.RetryCount, CONFIG.HttpGetTimeout, CONFIG.BaseRetryDelay)
-    if not source then return end
-
-    _G.SOULJAWARE_EXECUTION = {
-        ScriptName = gameData.Name,
-        PlaceId = game.PlaceId,
-        ScriptURL = urls[1],
-        IsUniversal = gameData.IsUniversal == true
-    }
-
-    local fn = loadstring(source)
-    if fn then
-        fn()
+    local gameData = getGameData()
+    
+    if not gameData then
+        if CONFIG.Verbose then
+            print("🔹 This game is not supported.")
+        end
+        return
+    end
+    
+    if CONFIG.Verbose then
+        print("🎮 Supported game found: " .. gameData.Name)
+    end
+    
+    local scriptContent = fetchScript(gameData.ScriptURL)
+    
+    if scriptContent then
+        local success, err = pcall(loadstring(scriptContent))
+        if success then
+            if CONFIG.Verbose then
+                print("✔️ " .. gameData.Name .. " loaded successfully!")
+            end
+        else
+            warn("❌ Failed to execute script: " .. tostring(err))
+        end
+    else
+        warn("❌ Could not download the script for " .. gameData.Name)
     end
 end
 
---================================================================================--
--- EXECUTION
---================================================================================--
-
-spawn(loadScript)
+-- Start the loader
+task.spawn(loadScript)
