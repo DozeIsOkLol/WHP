@@ -12,6 +12,11 @@ local SUPPORTED_GAMES = {
         ScriptURL = "https://raw.githubusercontent.com/DozeIsOkLol/WHP/refs/heads/main/G/7871169780.lua"
     },
     {
+        Name = "Silent Assassins",
+        PlaceIDs = {103854444055060},
+        ScriptURL = "https://raw.githubusercontent.com/DozeIsOkLol/WHP/refs/heads/main/G/103854444055060.lua"
+    },
+    {
         Name = "Universal",
         IsUniversal = true,
         ScriptURL = ""
