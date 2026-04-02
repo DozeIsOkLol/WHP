@@ -17,6 +17,11 @@ local SUPPORTED_GAMES = {
         ScriptURL = "https://raw.githubusercontent.com/DozeIsOkLol/WHP/refs/heads/main/G/103854444055060.lua"
     },
     {
+        Name = "RAGEBAIT and waddle away",
+        PlaceIDs = {128287244953761},
+        ScriptURL = "https://raw.githubusercontent.com/DozeIsOkLol/WHP/refs/heads/main/G/128287244953761.lua"
+    },
+    {
         Name = "Universal",
         IsUniversal = true,
         ScriptURL = ""
